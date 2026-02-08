@@ -1,6 +1,11 @@
 /**
  * Dynamics 365 Login Test
- * Tests browser-based authentication flow using k6 Browser module
+ * 
+ * Tests browser-based authentication flow using k6 Browser module.
+ * This test validates the complete Microsoft OAuth login process
+ * and measures login performance metrics.
+ * 
+ * @module tests/browser/login
  */
 
 import { browser } from 'k6/browser';
@@ -9,16 +14,18 @@ import { Trend, Counter } from 'k6/metrics';
 import { dynamics365Config, thresholds } from '@config/index';
 import LoginPage from '@lib/pages/login.page';
 
-// Custom metrics
+// Custom metrics for login performance tracking
 const loginTime = new Trend('d365_login_time');
 const loginSuccess = new Counter('d365_login_success');
 const loginFailure = new Counter('d365_login_failure');
 
-// Test user credentials from environment
+// Test user credentials from environment variables
 const TEST_USER_EMAIL = __ENV.D365_TEST_USER_EMAIL || '';
 const TEST_USER_PASSWORD = __ENV.D365_TEST_USER_PASSWORD || '';
 
-// Test configuration
+/**
+ * Test configuration and scenario definition
+ */
 export const options = {
   scenarios: {
     ui_login: {
@@ -28,14 +35,15 @@ export const options = {
       options: {
         browser: {
           type: 'chromium',
-          headless: __ENV.K6_HEADLESS !== 'false', // Run headless unless K6_HEADLESS=false
+          headless: __ENV.K6_BROWSER_HEADLESS !== 'false',
+          timeout: '60s',
         },
       },
     },
   },
   thresholds: {
     ...thresholds.browser,
-    'd365_login_time': ['p(95)<15000'], // Login should complete in < 15s (p95)
+    'd365_login_time': ['p(95)<15000'], // 95th percentile login < 15s
     'd365_login_success': ['count>0'], // At least one successful login
   },
   tags: {
@@ -45,15 +53,18 @@ export const options = {
 };
 
 /**
- * Setup function - validate configuration
+ * Setup function - Validates configuration before test execution
+ * @returns {Object} Test data containing user credentials
+ * @throws {Error} If credentials are not configured
  */
 export function setup() {
   console.log(`Testing D365 Login: ${dynamics365Config.orgUrl}`);
 
   if (!TEST_USER_EMAIL || !TEST_USER_PASSWORD) {
-    console.error('ERROR: Missing test user credentials!');
-    console.error('Please set D365_TEST_USER_EMAIL and D365_TEST_USER_PASSWORD in your .env file');
-    throw new Error('Test user credentials not configured');
+    throw new Error(
+      'Test user credentials not configured. ' +
+      'Please set D365_TEST_USER_EMAIL and D365_TEST_USER_PASSWORD in your .env file'
+    );
   }
 
   console.log(`Test User: ${TEST_USER_EMAIL}`);
@@ -61,38 +72,40 @@ export function setup() {
 }
 
 /**
- * Main test function
+ * Main test function - Executes the D365 login flow
+ * @param {Object} data - Test data from setup function
+ * @param {string} data.email - User email address
+ * @param {string} data.password - User password
  */
 export default async function (data: { email: string; password: string }) {
-  const context = await browser.newContext();
+  const context = await browser.newContext({
+    viewport: { width: 1920, height: 1080 },
+  });
+  
   const page = await context.newPage();
   const loginPage = new LoginPage(page);
-
   const startTime = Date.now();
 
   try {
-    console.log('Step 1: Navigate to Dynamics 365');
+    // Navigate to D365 login page
     await loginPage.navigateToLogin(dynamics365Config.orgUrl);
 
-    // Verify we're on login page
+    // Verify login page loaded correctly
     const onLoginPage = await loginPage.isOnLoginPage();
-    check(null, {
-      'login page loaded': () => onLoginPage,
-    });
+    check(null, { 'login page loaded': () => onLoginPage });
 
     if (!onLoginPage) {
-      throw new Error('Failed to load login page');
+      throw new Error('Failed to load D365 login page');
     }
 
-    console.log('Step 2: Perform login');
+    // Perform login
     await loginPage.login(data.email, data.password, false);
 
+    // Measure login duration
     const loginDuration = Date.now() - startTime;
     loginTime.add(loginDuration);
 
-    console.log(`Login completed in ${loginDuration}ms`);
-
-    // Verify successful login
+    // Validate successful login
     const isLoggedIn = await loginPage.isLoggedIn();
     const success = check(null, {
       'login successful': () => isLoggedIn,
@@ -101,25 +114,15 @@ export default async function (data: { email: string; password: string }) {
 
     if (success) {
       loginSuccess.add(1);
-      console.log('✓ Login test PASSED');
-
-      // Optional: Get current user info
-      const userName = await loginPage.getCurrentUserName();
-      if (userName) {
-        console.log(`Logged in as: ${userName}`);
-      }
+      console.log(`✓ Login successful in ${loginDuration}ms`);
     } else {
       loginFailure.add(1);
-      console.error('✗ Login test FAILED');
+      console.error('✗ Login validation failed');
     }
 
-    // Take screenshot for verification
-    await page.screenshot({ path: 'reports/login-complete.png' });
-    console.log('Screenshot saved: reports/login-complete.png');
   } catch (error) {
     loginFailure.add(1);
     console.error('Login test error:', error);
-    await page.screenshot({ path: 'reports/login-error.png' });
     throw error;
   } finally {
     await page.close();
@@ -128,7 +131,7 @@ export default async function (data: { email: string; password: string }) {
 }
 
 /**
- * Teardown function
+ * Teardown function - Cleanup after test execution
  */
 export function teardown() {
   console.log('Login test completed');

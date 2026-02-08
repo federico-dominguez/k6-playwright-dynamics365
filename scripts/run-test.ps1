@@ -2,17 +2,37 @@
 $envFile = ".env"
 
 if (Test-Path $envFile) {
+    Write-Host "Loading environment from .env file..." -ForegroundColor Cyan
+    
     Get-Content $envFile | ForEach-Object {
-        if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
-            $name = $matches[1].Trim()
-            $value = $matches[2].Trim()
-            # Remove quotes if present
-            $value = $value -replace '^["'']|["'']$'
-            [Environment]::SetEnvironmentVariable($name, $value, "Process")
-            Write-Host "Loaded: $name" -ForegroundColor Green
+        $line = $_.Trim()
+        if ($line -and !$line.StartsWith('#')) {
+            $parts = $line.Split('=', 2)
+            if ($parts.Length -eq 2) {
+                $name = $parts[0].Trim()
+                $value = $parts[1].Trim()
+                
+                # Remove quotes if present
+                if ($value.StartsWith('"') -and $value.EndsWith('"')) {
+                    $value = $value.Substring(1, $value.Length - 2)
+                } elseif ($value.StartsWith("'") -and $value.EndsWith("'")) {
+                    $value = $value.Substring(1, $value.Length - 2)
+                }
+                
+                # Set environment variable for current process
+                Set-Item -Path "env:$name" -Value $value
+                Write-Host (" + $name") -ForegroundColor Green
+            }
         }
     }
-    Write-Host "`nEnvironment variables loaded successfully!" -ForegroundColor Cyan
+    
+    # Special handling for K6_HEADLESS to set K6_BROWSER_HEADLESS
+    if (Test-Path env:K6_HEADLESS) {
+        $env:K6_BROWSER_HEADLESS = $env:K6_HEADLESS
+        Write-Host "Set K6_BROWSER_HEADLESS=$env:K6_HEADLESS" -ForegroundColor Cyan
+    }
+    
+    Write-Host ""
 } else {
     Write-Host "Error: .env file not found!" -ForegroundColor Red
     exit 1
@@ -24,7 +44,8 @@ if (-not $testType) {
     $testType = "protocol"
 }
 
-Write-Host "`nRunning test: $testType" -ForegroundColor Cyan
+Write-Host "Running test: $testType" -ForegroundColor Cyan
+Write-Host ""
 
 # Build first
 npm run build
@@ -48,5 +69,11 @@ if (-not $testFile) {
     exit 1
 }
 
-# Run k6
+Write-Host "Executing k6 test..." -ForegroundColor Gray
+Write-Host ""
+
+# Run k6 with environment variables already set in PowerShell session
 k6 run $testFile
+
+# Return k6 exit code
+exit $LASTEXITCODE

@@ -1,6 +1,13 @@
 /**
  * Example Browser Test
- * Tests Dynamics 365 UI using k6 Browser module
+ * 
+ * Demonstrates browser-based UI testing against Dynamics 365 using k6's browser module.
+ * Tests page load performance and basic navigation visibility.
+ * 
+ * Run with: npm run test:browser
+ * Note: Ensure K6_BROWSER_HEADLESS environment variable is set appropriately.
+ * 
+ * @module tests/browser/example
  */
 
 import { browser } from 'k6/browser';
@@ -8,10 +15,10 @@ import { check, sleep } from 'k6';
 import { Trend } from 'k6/metrics';
 import { dynamics365Config, thresholds } from '@config/index';
 
-// Custom metrics
+/** Custom metric: D365 page load time */
 const pageLoadTime = new Trend('d365_page_load_time');
 
-// Test configuration
+/** Test configuration */
 export const options = {
   scenarios: {
     ui: {
@@ -36,7 +43,8 @@ export const options = {
 };
 
 /**
- * Default function - runs browser test
+ * Main browser test function.
+ * Navigates to Dynamics 365 homepage and validates basic elements.
  */
 export default async function () {
   const context = await browser.newContext();
@@ -45,8 +53,7 @@ export default async function () {
   try {
     const startTime = Date.now();
 
-    // Navigate to Dynamics 365 login page
-    // Note: In real tests, you'd use your actual D365 URL
+    // Navigate to Dynamics 365 organization URL
     await page.goto(dynamics365Config.orgUrl, {
       waitUntil: 'networkidle',
     });
@@ -54,37 +61,23 @@ export default async function () {
     const loadTime = Date.now() - startTime;
     pageLoadTime.add(loadTime);
 
-    console.log(`Page loaded in ${loadTime}ms`);
+    console.log(`✓ Page loaded in ${loadTime}ms`);
 
-    // Example checks
+    // Validate successful page load
     check(page, {
-      'page loaded': p => p.url().includes('dynamics.com') || p.url().includes('crm'),
+      'page loaded successfully': p => 
+        p.url().includes('dynamics.com') || p.url().includes('crm'),
     });
 
-    // Wait for any loading indicators to disappear
-    // Dynamics 365 specific selectors
-    try {
-      await page.locator('[data-id="loading"]').waitFor({
-        state: 'hidden',
-        timeout: 30000,
-      });
-    } catch {
-      // Loading indicator may not be present
-    }
-
-    // Take screenshot for debugging
-    await page.screenshot({ path: 'reports/d365-homepage.png' });
-
-    // Example: Check for main navigation
-    const hasNavigation = await page.locator('[data-id="navbar-container"]').isVisible();
+    // Wait for Dynamics 365 navigation bar
+    const navigationVisible = await page.locator('#topBar').isVisible();
     check(null, {
-      'navigation is visible': () => hasNavigation,
+      'navigation bar is visible': () => navigationVisible,
     });
 
-    sleep(2);
+    sleep(1);
   } catch (error) {
-    console.error('Browser test error:', error);
-    await page.screenshot({ path: 'reports/error-screenshot.png' });
+    console.error('✗ Browser test error:', error);
     throw error;
   } finally {
     await page.close();
