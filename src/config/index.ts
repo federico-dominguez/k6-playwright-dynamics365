@@ -1,13 +1,13 @@
 /**
  * Centralized Configuration for k6 Performance Tests
- * 
+ *
  * Manages Dynamics 365 CE testing framework configuration including:
  * - OAuth2 authentication settings
  * - API endpoints and versioning
  * - Performance thresholds (SLOs)
  * - Test scenario configurations
  * - Environment-specific settings
- * 
+ *
  * @module config
  */
 
@@ -23,12 +23,12 @@ const env = {
 
 /**
  * Dynamics 365 API and Authentication Configuration
- * 
+ *
  * Provides centralized access to:
  * - Organization URL and API endpoints
  * - OAuth2 client credentials
  * - Token endpoint URLs
- * 
+ *
  * @example
  * import { dynamics365Config } from '@config/index';
  * const apiUrl = dynamics365Config.apiUrl; // https://org.crm.dynamics.com/api/data/v9.2
@@ -52,14 +52,14 @@ export const dynamics365Config = {
 
 /**
  * Performance Thresholds (Service Level Objectives)
- * 
+ *
  * Defines acceptable performance boundaries for API and browser tests.
  * Based on Dynamics 365 best practices and web vitals standards.
- * 
+ *
  * Thresholds:
  * - API: 95th percentile < 2s, 99th < 5s, error rate < 1%
  * - Browser: LCP/FCP < 4s, CLS < 0.1
- * 
+ *
  * @see https://grafana.com/docs/k6/latest/using-k6/thresholds/
  */
 export const thresholds = {
@@ -78,12 +78,12 @@ export const thresholds = {
 
 /**
  * Pre-configured Test Scenario Options
- * 
+ *
  * Ready-to-use k6 options for common testing scenarios:
  * - Smoke: Quick validation with 1 VU
  * - Load: Sustained load with 10 VUs
  * - Stress: Progressive load increase to find breaking point
- * 
+ *
  * @see https://grafana.com/docs/k6/latest/using-k6/k6-options/
  */
 export const defaultOptions = {
@@ -117,7 +117,7 @@ export const defaultOptions = {
 
 /**
  * Environment-specific Settings
- * 
+ *
  * Configure timeouts and retry behavior per environment:
  * - dev: Longer timeouts, more retries (development/debugging)
  * - staging: Moderate settings (pre-production validation)
@@ -144,9 +144,9 @@ export const environments = {
 /**
  * Get configuration for the current test environment.
  * Reads from TEST_ENVIRONMENT env variable (defaults to 'dev').
- * 
+ *
  * @returns {object} Environment-specific configuration object
- * 
+ *
  * @example
  * const config = getEnvironmentConfig();
  * console.log(`Timeout: ${config.timeout}ms`);

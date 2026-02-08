@@ -1,10 +1,10 @@
 /**
  * Base Page Object Class for k6 Browser Tests
- * 
+ *
  * Provides common functionality for Dynamics 365 page interactions.
  * Implements the Page Object Model pattern to promote code reusability
  * and maintainability in browser-based tests.
- * 
+ *
  * @module lib/pages/base
  */
 
@@ -20,7 +20,7 @@ export interface PageOptions {
 /**
  * Base Page class implementing Page Object Model pattern.
  * Extend this class to create page-specific objects.
- * 
+ *
  * @abstract
  * @example
  * class LoginPage extends BasePage {

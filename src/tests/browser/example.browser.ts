@@ -1,12 +1,12 @@
 /**
  * Example Browser Test
- * 
+ *
  * Demonstrates browser-based UI testing against Dynamics 365 using k6's browser module.
  * Tests page load performance and basic navigation visibility.
- * 
+ *
  * Run with: npm run test:browser
  * Note: Ensure K6_BROWSER_HEADLESS environment variable is set appropriately.
- * 
+ *
  * @module tests/browser/example
  */
 
@@ -34,7 +34,7 @@ export const options = {
   },
   thresholds: {
     ...thresholds.browser,
-    'd365_page_load_time': ['p(95)<5000'],
+    d365_page_load_time: ['p(95)<5000'],
   },
   tags: {
     testType: 'browser',
@@ -65,8 +65,7 @@ export default async function () {
 
     // Validate successful page load
     check(page, {
-      'page loaded successfully': p => 
-        p.url().includes('dynamics.com') || p.url().includes('crm'),
+      'page loaded successfully': p => p.url().includes('dynamics.com') || p.url().includes('crm'),
     });
 
     // Wait for Dynamics 365 navigation bar

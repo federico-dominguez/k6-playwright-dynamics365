@@ -1,9 +1,9 @@
 /**
  * Login Page Object for Dynamics 365
- * 
+ *
  * Handles Microsoft OAuth authentication flow for Dynamics 365.
  * Implements the Page Object Model pattern for maintainable browser testing.
- * 
+ *
  * @module lib/pages/login
  */
 
@@ -51,8 +51,10 @@ export class LoginPage extends BasePage {
     try {
       const staySignedInPrompt = this.page.locator(this.selectors.staySignedInNo);
       await staySignedInPrompt.waitFor({ state: 'visible', timeout: 10000 });
-      
-      const buttonSelector = staySignedIn ? this.selectors.staySignedInYes : this.selectors.staySignedInNo;
+
+      const buttonSelector = staySignedIn
+        ? this.selectors.staySignedInYes
+        : this.selectors.staySignedInNo;
       await this.click(buttonSelector);
       await this.page.waitForTimeout(2000);
     } catch (error) {

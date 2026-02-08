@@ -1,11 +1,11 @@
 /**
  * Example Protocol-Level (API) Test
- * 
+ *
  * Demonstrates HTTP/REST API testing against Dynamics 365 Web API.
  * Tests basic connectivity and entity queries using the OData protocol.
- * 
+ *
  * Run with: npm run test:protocol
- * 
+ *
  * @module tests/protocol/example
  */
 
@@ -33,7 +33,7 @@ export const options = {
 /**
  * Setup function - runs once before test execution.
  * Validates authentication and prepares test context.
- * 
+ *
  * @returns {object} Context object with auth headers
  */
 export function setup() {
@@ -53,7 +53,7 @@ export function setup() {
 /**
  * Main test function - executes for each Virtual User iteration.
  * Tests WhoAmI endpoint and account list query.
- * 
+ *
  * @param {object} data - Context from setup function
  */
 export default function (data: { headers: Record<string, string> }) {

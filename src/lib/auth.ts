@@ -1,10 +1,10 @@
 /**
  * Dynamics 365 OAuth2 Authentication Module
- * 
+ *
  * Handles token acquisition using OAuth2 Client Credentials flow.
  * Implements token caching to minimize authentication requests and
  * improve test performance.
- * 
+ *
  * @module lib/auth
  */
 
@@ -34,10 +34,10 @@ const authState: AuthState = {
 /**
  * Acquire OAuth2 access token using Client Credentials flow.
  * Implements automatic token caching and refresh logic.
- * 
+ *
  * @returns {string} Valid OAuth2 access token
  * @throws {Error} If authentication configuration is missing or token acquisition fails
- * 
+ *
  * @example
  * const token = getAccessToken();
  * const headers = { 'Authorization': `Bearer ${token}` };
@@ -57,7 +57,7 @@ export function getAccessToken(): string {
   if (!clientId || !clientSecret || !tenantId) {
     throw new Error(
       'Missing Dynamics 365 authentication configuration. ' +
-      'Please set D365_CLIENT_ID, D365_CLIENT_SECRET, and D365_TENANT_ID in your .env file.'
+        'Please set D365_CLIENT_ID, D365_CLIENT_SECRET, and D365_TENANT_ID in your .env file.'
     );
   }
 
@@ -105,9 +105,9 @@ export function getAccessToken(): string {
 /**
  * Build standard authorization headers for Dynamics 365 Web API requests.
  * Automatically acquires and includes a valid OAuth2 access token.
- * 
+ *
  * @returns {Record<string, string>} Headers object with Bearer token and OData metadata
- * 
+ *
  * @example
  * const headers = getAuthHeaders();
  * const response = http.get(`${baseUrl}/api/data/v9.2/accounts`, { headers });
@@ -126,7 +126,7 @@ export function getAuthHeaders(): Record<string, string> {
  * Clear cached authentication token.
  * Forces fresh token acquisition on next request.
  * Useful for testing token refresh behavior or simulating auth failures.
- * 
+ *
  * @example
  * clearTokenCache();
  * // Next API call will acquire a new token

@@ -1,10 +1,10 @@
 /**
  * Dynamics 365 Login Test
- * 
+ *
  * Tests browser-based authentication flow using k6 Browser module.
  * This test validates the complete Microsoft OAuth login process
  * and measures login performance metrics.
- * 
+ *
  * @module tests/browser/login
  */
 
@@ -43,8 +43,8 @@ export const options = {
   },
   thresholds: {
     ...thresholds.browser,
-    'd365_login_time': ['p(95)<15000'], // 95th percentile login < 15s
-    'd365_login_success': ['count>0'], // At least one successful login
+    d365_login_time: ['p(95)<15000'], // 95th percentile login < 15s
+    d365_login_success: ['count>0'], // At least one successful login
   },
   tags: {
     testType: 'browser',
@@ -63,7 +63,7 @@ export function setup() {
   if (!TEST_USER_EMAIL || !TEST_USER_PASSWORD) {
     throw new Error(
       'Test user credentials not configured. ' +
-      'Please set D365_TEST_USER_EMAIL and D365_TEST_USER_PASSWORD in your .env file'
+        'Please set D365_TEST_USER_EMAIL and D365_TEST_USER_PASSWORD in your .env file'
     );
   }
 
@@ -81,7 +81,7 @@ export default async function (data: { email: string; password: string }) {
   const context = await browser.newContext({
     viewport: { width: 1920, height: 1080 },
   });
-  
+
   const page = await context.newPage();
   const loginPage = new LoginPage(page);
   const startTime = Date.now();
@@ -119,7 +119,6 @@ export default async function (data: { email: string; password: string }) {
       loginFailure.add(1);
       console.error('✗ Login validation failed');
     }
-
   } catch (error) {
     loginFailure.add(1);
     console.error('Login test error:', error);
