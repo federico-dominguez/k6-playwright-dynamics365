@@ -1,6 +1,12 @@
 /**
  * Example Protocol-Level (API) Test
- * Tests Dynamics 365 Web API endpoints
+ *
+ * Demonstrates HTTP/REST API testing against Dynamics 365 Web API.
+ * Tests basic connectivity and entity queries using the OData protocol.
+ *
+ * Run with: npm run test:protocol
+ *
+ * @module tests/protocol/example
  */
 
 import http from 'k6/http';
@@ -9,11 +15,13 @@ import { Rate, Trend } from 'k6/metrics';
 import { dynamics365Config, defaultOptions } from '@config/index';
 import { getAuthHeaders } from '@lib/auth';
 
-// Custom metrics
+/** Custom metric: D365 API error rate */
 const errorRate = new Rate('d365_errors');
+
+/** Custom metric: D365 API response latency */
 const apiLatency = new Trend('d365_api_latency');
 
-// Test configuration
+/** Test configuration */
 export const options = {
   ...defaultOptions.smoke,
   tags: {
@@ -23,31 +31,36 @@ export const options = {
 };
 
 /**
- * Setup function - runs once before test
+ * Setup function - runs once before test execution.
+ * Validates authentication and prepares test context.
+ *
+ * @returns {object} Context object with auth headers
  */
 export function setup() {
   console.log(`Testing against: ${dynamics365Config.orgUrl}`);
   console.log(`API Version: ${dynamics365Config.apiVersion}`);
 
-  // Verify authentication works
   try {
     const headers = getAuthHeaders();
-    console.log('Authentication successful');
+    console.log('✓ Authentication successful');
     return { headers };
   } catch (error) {
-    console.error('Authentication failed:', error);
+    console.error('✗ Authentication failed:', error);
     throw error;
   }
 }
 
 /**
- * Default function - runs for each VU iteration
+ * Main test function - executes for each Virtual User iteration.
+ * Tests WhoAmI endpoint and account list query.
+ *
+ * @param {object} data - Context from setup function
  */
 export default function (data: { headers: Record<string, string> }) {
   const { headers } = data;
   const apiUrl = dynamics365Config.apiUrl;
 
-  // Example: Get WhoAmI (basic connectivity test)
+  // Test 1: WhoAmI (basic connectivity)
   const whoAmIResponse = http.get(`${apiUrl}/WhoAmI`, {
     headers,
     tags: { endpoint: 'WhoAmI' },
@@ -72,7 +85,7 @@ export default function (data: { headers: Record<string, string> }) {
 
   sleep(1);
 
-  // Example: Get accounts (list query)
+  // Test 2: Accounts query (OData list)
   const accountsResponse = http.get(`${apiUrl}/accounts?$select=name,accountid&$top=10`, {
     headers,
     tags: { endpoint: 'accounts' },

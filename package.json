@@ -6,9 +6,10 @@
   "scripts": {
     "build": "webpack",
     "build:watch": "webpack --watch",
-    "test:protocol": "npm run build && k6 run dist/tests/protocol/example.api.js",
-    "test:browser": "npm run build && k6 run dist/tests/browser/example.browser.js",
-    "test": "npm run build && k6 run dist/tests/protocol/example.api.js",
+    "test:protocol": "powershell -ExecutionPolicy Bypass -File ./scripts/run-test.ps1 protocol",
+    "test:browser": "powershell -ExecutionPolicy Bypass -File ./scripts/run-test.ps1 browser",
+    "test:login": "powershell -ExecutionPolicy Bypass -File ./scripts/run-test.ps1 login",
+    "test": "npm run test:protocol",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\""
   },
