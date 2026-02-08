@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test reports
+reports/
+*.html
+*.json.gz
+
+# k6 output
+summary.json
+results.json
+
+# Credentials (never commit)
+**/credentials.json
+**/secrets.json

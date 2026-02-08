@@ -1,0 +1,33 @@
+{
+  "name": "k6-playwright-dynamics365",
+  "version": "1.0.0",
+  "description": "Performance & Automation Testing Framework for Microsoft Dynamics 365 CE using k6 and Playwright",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "webpack",
+    "build:watch": "webpack --watch",
+    "test:protocol": "npm run build && k6 run dist/tests/protocol/example.api.js",
+    "test:browser": "npm run build && k6 run dist/tests/browser/example.browser.js",
+    "test": "npm run build && k6 run dist/tests/protocol/example.api.js",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
+  },
+  "keywords": [
+    "k6",
+    "playwright",
+    "dynamics365",
+    "performance-testing",
+    "load-testing",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/k6": "^0.54.0",
+    "prettier": "^3.2.0",
+    "ts-loader": "^9.5.0",
+    "typescript": "^5.3.0",
+    "webpack": "^5.90.0",
+    "webpack-cli": "^5.1.0"
+  }
+}

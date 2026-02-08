@@ -1,104 +1,162 @@
 # k6-playwright-dynamics365
 
+[![CI](https://github.com/federico-dominguez/k6-playwright-dynamics365/actions/workflows/ci.yml/badge.svg)](https://github.com/federico-dominguez/k6-playwright-dynamics365/actions/workflows/ci.yml)
+
 Performance & Automation Testing Framework for Microsoft Dynamics 365 CE (Customer Service/Sales) using k6 (Grafana) and Playwright.
-
-## Overview
-
-This framework provides a comprehensive solution for:
-- **Performance Testing**: Load, stress, spike, and soak testing using k6
-- **Browser Automation**: UI-level testing using k6's browser module (Playwright-based)
-- **API Testing**: Protocol-level testing of Dynamics 365 Web API and OData endpoints
-- **CI/CD Integration**: GitHub Actions workflows for automated testing
 
 ## Features
 
-- 🚀 **Code-first approach**: TypeScript-based test scripts
-- 📊 **Comprehensive metrics**: Custom metrics for Dynamics 365 specific KPIs
-- 🔧 **Modular architecture**: Page Object Model, reusable fixtures, and helpers
-- 🔄 **CI/CD ready**: Pre-configured GitHub Actions workflows
-- 📈 **Performance thresholds**: Built-in SLO validation
+- **Protocol-level Testing**: High-performance API testing using k6 HTTP client
+- **Browser Testing**: UI automation using k6's browser module (Chromium-based)
+- **Dynamics 365 Integration**: OAuth2 authentication, Web API client
+- **TypeScript**: Full type safety with path aliases
+- **CI/CD Ready**: GitHub Actions workflow included
 
-## Tech Stack
+## Prerequisites
 
-- [k6](https://k6.io/) - Load testing tool by Grafana Labs
-- [k6 Browser](https://grafana.com/docs/k6/latest/using-k6-browser/) - Browser automation (Playwright-based)
-- [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
-- [Dynamics 365 Web API](https://learn.microsoft.com/en-us/power-apps/developer/data-platform/webapi/overview)
+- **Node.js** 20.x or later
+- **k6** installed ([Installation Guide](https://grafana.com/docs/k6/latest/set-up/install-k6/))
+- **Chrome/Chromium** (for browser tests)
+- **Dynamics 365 CE** environment with API access
 
-## Getting Started
+## Quick Start
 
-> 🚧 **Work in Progress**: See [Issue #1](https://github.com/federico-dominguez/k6-playwright-dynamics365/issues/1) for project setup status.
-
-### Prerequisites
-
-- Node.js 20.x or later
-- k6 installed ([Installation Guide](https://grafana.com/docs/k6/latest/set-up/install-k6/))
-- Chrome/Chromium browser (for browser tests)
-- Dynamics 365 CE environment with API access
-
-### Installation
+### 1. Clone and Install
 
 ```bash
-# Clone the repository
 git clone https://github.com/federico-dominguez/k6-playwright-dynamics365.git
 cd k6-playwright-dynamics365
-
-# Install dependencies
 npm install
-
-# Copy environment template
-cp .env.example .env
-# Edit .env with your Dynamics 365 credentials
 ```
 
-### Running Tests
+### 2. Configure Environment
 
 ```bash
-# Run protocol-level tests
+cp .env.example .env
+```
+
+Edit `.env` with your Dynamics 365 credentials:
+
+```env
+D365_ORG_URL=https://your-org.crm.dynamics.com
+D365_CLIENT_ID=your-client-id
+D365_CLIENT_SECRET=your-client-secret
+D365_TENANT_ID=your-tenant-id
+```
+
+### 3. Build and Run
+
+```bash
+# Build TypeScript to JavaScript
+npm run build
+
+# Run protocol (API) test
 npm run test:protocol
 
-# Run browser tests
+# Run browser test
 npm run test:browser
-
-# Run all tests with default config
-npm run test
 ```
 
 ## Project Structure
 
 ```
 ├── src/
-│   ├── config/          # Configuration files
-│   ├── lib/             # Shared libraries (API clients, POMs, helpers)
-│   ├── scenarios/       # Performance test scenarios
-│   └── tests/           # Test files (browser, protocol, hybrid)
-├── data/                # Test data files
-├── docs/                # Documentation
-├── reports/             # Generated reports
-└── scripts/             # Utility scripts
+│   ├── config/           # Configuration (thresholds, environments)
+│   ├── lib/              # Shared libraries
+│   │   ├── auth.ts       # OAuth2 authentication
+│   │   └── pages/        # Page Object Models
+│   └── tests/
+│       ├── browser/      # k6 browser tests
+│       └── protocol/     # API tests
+├── data/                 # Test data files
+├── .github/workflows/    # CI/CD pipelines
+└── webpack.config.js     # Build configuration
 ```
+
+## Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run build` | Compile TypeScript to JavaScript |
+| `npm run build:watch` | Build with watch mode |
+| `npm run test:protocol` | Run API tests |
+| `npm run test:browser` | Run browser tests |
+| `npm run format` | Format code with Prettier |
+| `npm run format:check` | Check code formatting |
+
+## Writing Tests
+
+### Protocol Test Example
+
+```typescript
+import http from 'k6/http';
+import { check } from 'k6';
+import { getAuthHeaders } from '@lib/auth';
+import { dynamics365Config } from '@config/index';
+
+export default function () {
+  const headers = getAuthHeaders();
+  const response = http.get(`${dynamics365Config.apiUrl}/accounts`, { headers });
+  
+  check(response, {
+    'status is 200': r => r.status === 200,
+  });
+}
+```
+
+### Browser Test Example
+
+```typescript
+import { browser } from 'k6/browser';
+import { check } from 'k6';
+
+export default async function () {
+  const page = await browser.newPage();
+  await page.goto('https://your-org.crm.dynamics.com');
+  
+  check(page, {
+    'page loaded': p => p.title().includes('Dynamics'),
+  });
+  
+  await page.close();
+}
+```
+
+## Performance Thresholds
+
+Default thresholds based on Dynamics 365 best practices:
+
+| Metric | Threshold |
+|--------|-----------|
+| API Response (p95) | < 2s |
+| API Response (p99) | < 5s |
+| Error Rate | < 1% |
+| LCP (p95) | < 4s |
+| FCP (p95) | < 3s |
+
+## CI/CD
+
+The project includes a GitHub Actions workflow that:
+
+1. Builds the TypeScript code
+2. Checks code formatting
+3. Runs smoke tests on PRs (requires secrets configuration)
+
+### Required Secrets
+
+Configure these in your repository settings:
+
+- `D365_ORG_URL`
+- `D365_CLIENT_ID`
+- `D365_CLIENT_SECRET`
+- `D365_TENANT_ID`
 
 ## Documentation
 
-- [Getting Started](./docs/GETTING_STARTED.md)
-- [Architecture Overview](./docs/ARCHITECTURE.md)
-- [Test Patterns & Best Practices](./docs/TEST_PATTERNS.md)
-- [CI/CD Setup Guide](./docs/CI_CD_SETUP.md)
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- [k6 Documentation](https://grafana.com/docs/k6/latest/)
+- [k6 Browser](https://grafana.com/docs/k6/latest/using-k6-browser/)
+- [Dynamics 365 Web API](https://learn.microsoft.com/en-us/power-apps/developer/data-platform/webapi/overview)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [Grafana k6](https://k6.io/) for the excellent load testing framework
-- [Microsoft Dynamics 365](https://dynamics.microsoft.com/) documentation team
-- [Playwright](https://playwright.dev/) for browser automation capabilities
+MIT
