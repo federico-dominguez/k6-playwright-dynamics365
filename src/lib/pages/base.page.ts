@@ -120,14 +120,17 @@ export abstract class BasePage {
     const loadingIndicators = [
       '[data-id="loading"]',
       '.ms-Spinner',
-      '.loading-indicator',
       '[aria-busy="true"]',
     ];
 
     for (const indicator of loadingIndicators) {
       try {
         const element = this.page.locator(indicator);
-        await element.waitFor({ state: 'hidden', timeout: this.timeout });
+        const isVisible = await element.isVisible();
+        
+        if (isVisible) {
+          await element.waitFor({ state: 'hidden', timeout: 5000 });
+        }
       } catch {
         // Indicator not present or already hidden
       }

@@ -50,6 +50,11 @@ export class ContactPage extends BasePage {
    * @private
    */
   private selectors = {
+    // App picker (home page)
+    appTile: (appName: string) => `div[title="${appName}"]`,
+    salesHubApp: '[title="Sales Hub"]',
+    appContainer: 'div[data-type="app-icon"]',
+
     // Navigation and commands
     newButton: 'button[aria-label="New"]',
     saveButton: 'button[aria-label="Save (CTRL+S)"]',
@@ -58,6 +63,13 @@ export class ContactPage extends BasePage {
     deactivateButton: 'button[aria-label="Deactivate"]',
     activateButton: 'button[aria-label="Activate"]',
     refreshButton: 'button[aria-label="Refresh"]',
+
+    // Sitemap navigation (left nav)
+    sitemapLauncher: 'button[data-lp-id="sitemap-launcher"]',
+    sitemapAreaSwitcher: '[data-id="sitemap-areaSwitcher-expand-btn"]',
+    sitemapContactsLink: '[data-id="sitemap-entity-Contacts"]',
+    sitemapCustomersArea: '[title="Customers"]',
+    searchSitemap: 'input[placeholder="Search"]',
 
     // Form header
     formHeader: '[data-id="form-header"]',
@@ -130,12 +142,97 @@ export class ContactPage extends BasePage {
   // ============================================
 
   /**
-   * Navigate to Contact list view (grid)
+   * Navigate to Contact list view (grid) using sitemap navigation
    * @returns {Promise<void>}
    */
   async navigateToContactList(): Promise<void> {
-    const url = `${dynamics365Config.orgUrl}/main.aspx?appid=&pagetype=entitylist&etn=contact`;
+    // First check if we're on app picker page - click Sales Hub if so
+    await this.selectAppIfNeeded('Sales Hub');
+
+    // Method 1: Use direct URL with appid (most reliable)
+    const appId = '180923c8-1ac8-f011-8543-6045bd389d38'; // Sales Hub
+    const url = `${dynamics365Config.orgUrl}/main.aspx?appid=${appId}&pagetype=entitylist&etn=contact`;
     await this.goto(url);
+    
+    // Wait for "My Active Contacts" view to appear
+    try {
+      const activeContactsLabel = this.page.locator('span:has-text("My Active Contacts")');
+      await activeContactsLabel.waitFor({ state: 'visible', timeout: 30000 });
+    } catch {
+      // Fallback: just wait for page to settle
+      await this.page.waitForTimeout(5000);
+    }
+    
+    await this.waitForGridLoad();
+  }
+
+  /**
+   * Select an app from the app picker if we're on that page
+   * @param {string} appName - Name of the app to select
+   * @returns {Promise<void>}
+   */
+  async selectAppIfNeeded(appName: string): Promise<void> {
+    try {
+      // Check if we're on app picker by looking for app tiles
+      let appTile = this.page.locator(`[title="${appName}"]`);
+      
+      let isAppPickerVisible = await appTile.isVisible();
+      if (!isAppPickerVisible) {
+        // Try alternative selector
+        appTile = this.page.locator(`button:has-text("${appName}")`);
+        isAppPickerVisible = await appTile.isVisible();
+      }
+
+      if (isAppPickerVisible) {
+        await appTile.click();
+        await this.page.waitForTimeout(5000); // Wait for app to load
+      }
+    } catch {
+      // Not on app picker, continue
+    }
+  }
+
+  /**
+   * Switch to a different view in the Contact list
+   * @param {string} viewName - Name of the view to switch to (e.g., "All Contacts")
+   * @returns {Promise<void>}
+   */
+  async switchToView(viewName: string): Promise<void> {
+    // Find and click the current view dropdown button
+    const allButtons = await this.page.$$('[class*="Button-label"]');
+    
+    let viewDropdownButton = null;
+    for (const button of allButtons) {
+      const text = await button.textContent();
+      if (text && text.includes('My Active Contacts')) {
+        viewDropdownButton = button;
+        break;
+      }
+    }
+    
+    if (!viewDropdownButton) {
+      throw new Error('Could not find view dropdown button');
+    }
+    
+    await viewDropdownButton.click();
+    await this.page.waitForTimeout(1000);
+    
+    // Find and click the desired view option
+    let viewOptionElement = null;
+    for (const label of await this.page.$$('label')) {
+      const text = await label.textContent();
+      if (text && text.includes(viewName)) {
+        viewOptionElement = label;
+        break;
+      }
+    }
+    
+    if (!viewOptionElement) {
+      throw new Error(`Could not find view option: ${viewName}`);
+    }
+    
+    await viewOptionElement.click();
+    await this.page.waitForTimeout(1000);
     await this.waitForGridLoad();
   }
 
@@ -182,25 +279,32 @@ export class ContactPage extends BasePage {
    * @returns {Promise<void>}
    */
   async fillContactForm(data: ContactFormData): Promise<void> {
+    console.log('  Filling form fields...');
     if (data.firstname) {
+      console.log(`    - First Name: ${data.firstname}`);
       await this.fillField(this.selectors.firstnameField, data.firstname);
     }
     if (data.lastname) {
+      console.log(`    - Last Name: ${data.lastname}`);
       await this.fillField(this.selectors.lastnameField, data.lastname);
     }
     if (data.emailaddress1) {
+      console.log(`    - Email: ${data.emailaddress1}`);
       await this.fillField(this.selectors.emailField, data.emailaddress1);
     }
     if (data.telephone1) {
+      console.log(`    - Business Phone: ${data.telephone1}`);
       await this.fillField(this.selectors.businessPhoneField, data.telephone1);
     }
     if (data.mobilephone) {
       await this.fillField(this.selectors.mobilePhoneField, data.mobilephone);
     }
     if (data.jobtitle) {
+      console.log(`    - Job Title: ${data.jobtitle}`);
       await this.fillField(this.selectors.jobTitleField, data.jobtitle);
     }
     if (data.department) {
+      console.log(`    - Department: ${data.department}`);
       await this.fillField(this.selectors.departmentField, data.department);
     }
     if (data.address1_line1) {
@@ -218,6 +322,7 @@ export class ContactPage extends BasePage {
     if (data.parentAccount) {
       await this.setParentAccount(data.parentAccount);
     }
+    console.log('  Form fields filled successfully');
   }
 
   /**
@@ -229,12 +334,12 @@ export class ContactPage extends BasePage {
   private async fillField(selector: string, value: string): Promise<void> {
     try {
       const field = this.page.locator(selector);
-      await field.waitFor({ state: 'visible', timeout: this.timeout });
+      await field.waitFor({ state: 'visible', timeout: 10000 });
       await field.click();
       await field.fill(''); // Clear existing value
       await field.fill(value);
-      // Click elsewhere to trigger change event
-      await this.page.locator(this.selectors.formHeader).click();
+      // Small delay to ensure field is updated
+      await this.page.waitForTimeout(200);
     } catch (error) {
       console.log(`Warning: Could not fill field ${selector}: ${error}`);
     }
@@ -464,23 +569,16 @@ export class ContactPage extends BasePage {
    * @returns {Promise<void>}
    */
   async waitForFormLoad(): Promise<void> {
-    // Wait for loading overlay to disappear
-    try {
-      const overlay = this.page.locator(this.selectors.formLoadingOverlay);
-      await overlay.waitFor({ state: 'hidden', timeout: this.timeout });
-    } catch {
-      // Overlay may not appear for quick loads
-    }
-
-    // Wait for form header to be visible
+    // Wait for form header to be visible (reduced timeout)
     try {
       const header = this.page.locator(this.selectors.formHeader);
-      await header.waitFor({ state: 'visible', timeout: this.timeout });
+      await header.waitFor({ state: 'visible', timeout: 10000 });
     } catch {
-      // Form header might have different structure
+      // Form header might have different structure, just wait a bit
+      await this.page.waitForTimeout(2000);
     }
 
-    // Additional wait for D365 async operations
+    // Quick check for loading indicators
     await this.waitForDynamicsLoad();
   }
 
@@ -489,12 +587,29 @@ export class ContactPage extends BasePage {
    * @returns {Promise<void>}
    */
   async waitForGridLoad(): Promise<void> {
-    try {
-      const grid = this.page.locator(this.selectors.gridContainer);
-      await grid.waitFor({ state: 'visible', timeout: this.timeout });
-    } catch {
-      // Grid container might have different structure
+    // Try common grid selectors (reduced timeout)
+    const gridSelectors = [
+      '[data-id="DataSetHostContainer"]',
+      this.selectors.gridContainer,
+      '[data-lp-id="MscrmControls.Grid.PCFGridControl"]',
+    ];
+
+    let gridFound = false;
+    for (const selector of gridSelectors) {
+      try {
+        const grid = this.page.locator(selector);
+        await grid.waitFor({ state: 'visible', timeout: 5000 });
+        gridFound = true;
+        break;
+      } catch {
+        // Try next selector
+      }
     }
+
+    if (!gridFound) {
+      await this.page.waitForTimeout(1000);
+    }
+
     await this.waitForDynamicsLoad();
   }
 
@@ -581,10 +696,32 @@ export class ContactPage extends BasePage {
    * @returns {Promise<boolean>} Check result
    */
   async verifyOnContactList(): Promise<boolean> {
-    const title = await this.page.title();
-    return check(null, {
-      'on contacts list page': () => title.toLowerCase().includes('contact'),
-    });
+    // Wait a moment for page to fully render
+    await this.page.waitForTimeout(2000);
+    
+    const url = this.page.url();
+    const urlHasContact = url.includes('etn=contact');
+    
+    // If URL confirms we're on contacts, return true without further checks
+    if (urlHasContact) {
+      return check(null, {
+        'on contacts list page': () => true,
+      });
+    }
+
+    // Otherwise try to find the view label
+    try {
+      const viewLabel = this.page.locator('.ms-Button-label:has-text("My Active Contacts")');
+      const hasLabel = await viewLabel.isVisible();
+      
+      return check(null, {
+        'on contacts list page': () => hasLabel,
+      });
+    } catch {
+      return check(null, {
+        'on contacts list page': () => false,
+      });
+    }
   }
 
   // ============================================

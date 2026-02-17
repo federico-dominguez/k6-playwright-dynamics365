@@ -60,12 +60,15 @@ $testFiles = @{
     "protocol" = "dist/tests/protocol/example.api.js"
     "browser" = "dist/tests/browser/example.browser.js"
     "login" = "dist/tests/browser/login.browser.js"
+    "contact-api" = "dist/tests/protocol/contact.api.js"
+    "contact-browser" = "dist/tests/browser/contact.browser.js"
+    "contact-hybrid" = "dist/tests/browser/contact.hybrid.js"
 }
 
 $testFile = $testFiles[$testType]
 if (-not $testFile) {
     Write-Host "Unknown test type: $testType" -ForegroundColor Red
-    Write-Host "Available: protocol, browser, login" -ForegroundColor Yellow
+    Write-Host "Available: protocol, browser, login, contact-api, contact-browser, contact-hybrid" -ForegroundColor Yellow
     exit 1
 }
 
